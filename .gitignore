@@ -1,0 +1,8 @@
+# Kiro IDE files
+.kiro/
+
+# VS Code settings
+.vscode/
+
+# SSH public keys
+*.pub
