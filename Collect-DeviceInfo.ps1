@@ -10,7 +10,8 @@
 #>
 param(
     [string]$SavePath,
-    [string]$FileName
+    [string]$FileName,
+    [string]$SchoolName
 )
 
 # --- Module check ---
@@ -18,12 +19,20 @@ if (-not (Get-Module -ListAvailable -Name ImportExcel)) {
     throw "The 'ImportExcel' module is not installed. Install it by running: Install-Module ImportExcel -Scope CurrentUser"
 }
 
+if ([string]::IsNullOrWhiteSpace($SavePath)) {
+    throw "SavePath is required. Provide the folder where the Excel file should be saved."
+}
+
+if ([string]::IsNullOrWhiteSpace($FileName)) {
+    throw "FileName is required. Provide the workbook name, for example 'SchoolA-Laptops'."
+}
+
 # --- Normalize FileName: append .xlsx if missing ---
 if (-not $FileName.EndsWith('.xlsx')) {
     $FileName = "$FileName.xlsx"
 }
 
-# --- Ensure SavePath directory exists ---
+# --- Ensure the base save directory exists ---
 if (-not (Test-Path -Path $SavePath)) {
     try {
         New-Item -Path $SavePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
@@ -311,22 +320,44 @@ function Resolve-OutputPath {
     <#
     .SYNOPSIS
         Normalises FileName (appending .xlsx if absent) and returns the full output path
-        by combining SavePath and FileName via Join-Path.
+        by combining SavePath, optional SchoolName, and FileName via Join-Path.
     #>
     param(
         [string]$SavePath,
-        [string]$FileName
+        [string]$FileName,
+        [string]$SchoolName
     )
+
+    if ([string]::IsNullOrWhiteSpace($SavePath)) {
+        throw "SavePath is required."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($FileName)) {
+        throw "FileName is required."
+    }
+
+    $basePath = $SavePath
+    if (-not [string]::IsNullOrWhiteSpace($SchoolName)) {
+        $basePath = Join-Path $SavePath ($SchoolName.Trim())
+        if (-not (Test-Path -Path $basePath)) {
+            New-Item -Path $basePath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+        }
+    }
 
     if (-not $FileName.EndsWith('.xlsx')) {
         $FileName = "$FileName.xlsx"
     }
 
-    return Join-Path $SavePath $FileName
+    return Join-Path $basePath $FileName
 }
 
 # --- Main script body ---
-$fullPath = Resolve-OutputPath -SavePath $SavePath -FileName $FileName
+$fullPath = Resolve-OutputPath -SavePath $SavePath -FileName $FileName -SchoolName $SchoolName
+$outputDir = Split-Path -Parent $fullPath
+if (-not (Test-Path -Path $outputDir)) {
+    New-Item -Path $outputDir -ItemType Directory -Force -ErrorAction Stop | Out-Null
+}
+
 $hw       = Get-HardwareInfo
 $battery  = Get-BatteryInfo
 $row      = Build-OutputRow -HardwareInfo $hw -BatteryInfo $battery

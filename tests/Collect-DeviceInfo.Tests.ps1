@@ -478,6 +478,12 @@ Describe "Property 4: Output Path Construction" -Tags @("Feature: windows-machin
         $result = Resolve-OutputPath -SavePath "D:\Data\Devices" -FileName "inventory"
         $result | Should Be (Join-Path "D:\Data\Devices" "inventory.xlsx")
     }
+
+    It "stores each school in its own folder when SchoolName is provided" {
+        $result = Resolve-OutputPath -SavePath "D:\OneDrive\DeviceReports" -FileName "SchoolInventory" -SchoolName "SchoolA"
+        $expected = Join-Path (Join-Path "D:\OneDrive\DeviceReports" "SchoolA") "SchoolInventory.xlsx"
+        $result | Should Be $expected
+    }
 }
 
 Describe "Property 5: Row Written with All Required Columns" -Tags @("Feature: windows-machine-info-collector", "Property 5: Row Written with All Required Columns") {
